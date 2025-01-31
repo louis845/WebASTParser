@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Token Visualizer</title>
+    <style>
+        /* Apply box-sizing globally */
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            font-family: Arial, sans-serif;
+            overflow: hidden; /* Prevent body from scrolling */
+        }
+        tree-token-visualizer {
+            flex: 0 0 70%; /* 70% height */
+            width: 100%;
+            box-sizing: border-box;
+            overflow: auto;
+        }
+        #inputContainer {
+            flex: 0 0 25%; /* 25% height */
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10px;
+            overflow: hidden; /* Prevent overflow in textarea */
+        }
+        #inputText {
+            flex: 1;
+            width: 100%;
+            resize: none;
+            font-family: monospace;
+            font-size: 14px;
+            padding: 10px;
+            box-sizing: border-box;
+            overflow: auto;
+        }
+        #buttonContainer {
+            flex: 0 0 5%; /* 5% height */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between; /* Space between checkboxes and button */
+            width: 100%;
+            box-sizing: border-box;
+            padding: 5px 10px; /* Adjusted padding */
+            overflow: hidden; /* Prevent overflow */
+        }
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            /* Adjust the flex properties to fit within 5% height */
+            flex: 1 1 auto;
+            overflow: auto;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+        }
+        .checkbox-item input {
+            margin-right: 5px;
+        }
+        #submitBtn {
+            width: 100%;
+            height: 35px; /* Adjusted height */
+            font-size: 16px;
+            cursor: pointer;
+            padding: 5px;
+            box-sizing: border-box;
+            margin-top: 5px; /* Space above the button */
+        }
+
+        /* Responsive adjustments if needed */
+        @media (max-height: 600px) {
+            #inputContainer {
+                flex: 0 0 30%; /* Adjust heights for smaller screens */
+            }
+            token-visualizer {
+                flex: 0 0 65%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <tree-token-visualizer></tree-token-visualizer>
+
+    <div id="inputContainer">
+        <textarea id="inputText" placeholder="Enter your text here"></textarea>
+    </div>
+
+    <div id="buttonContainer">
+        <div class="checkbox-group">
+            <div class="checkbox-item">
+                <input type="checkbox" id="optionNone" name="option" value="None" checked>
+                <label for="optionNone">None</label>
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="optionTopLevel" name="option" value="Top Level">
+                <label for="optionTopLevel">Top Level</label>
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="optionFunctionsClasses" name="option" value="Functions and Classes">
+                <label for="optionFunctionsClasses">Functions and Classes</label>
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="optionFunctionsClassesArgs" name="option" value="Functions and Classes and Arguments">
+                <label for="optionFunctionsClassesArgs">Functions and Classes and Arguments</label>
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="optionEverything" name="option" value="Everything">
+                <label for="optionEverything">Everything</label>
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="optionSpecialized" name="option" value="Specialized">
+                <label for="optionSpecialized">Specialized</label>
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="excludeInner" name="excludeInner">
+                <label for="excludeInner">Exclude inner</label>
+            </div>
+        </div>
+        <button id="submitBtn">Submit</button>
+    </div>
+
+    <script src="../bundle/bundle.js"></script>
+    <script>
+        let tree = null;
+        let prevTextInput = null;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const submitBtn = document.getElementById("submitBtn");
+            const inputText = document.getElementById("inputText");
+            const tokenVisualizer = document.querySelector("tree-token-visualizer");
+
+            const optionCheckboxes = document.querySelectorAll('input[name="option"]');
+            const excludeInnerCheckbox = document.getElementById("excludeInner");
+
+            // Ensure that only one of the first six checkboxes can be checked at a time
+            optionCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener("change", () => {
+                    if (checkbox.checked) {
+                        optionCheckboxes.forEach(otherCheckbox => {
+                            if (otherCheckbox !== checkbox) {
+                                otherCheckbox.checked = false;
+                            }
+                        });
+                    } else {
+                        // Prevent all first six checkboxes from being unchecked
+                        const anyChecked = Array.from(optionCheckboxes).some(cb => cb.checked);
+                        if (!anyChecked) {
+                            checkbox.checked = true;
+                        }
+                    }
+                });
+            });
+
+            submitBtn.addEventListener("click", () => {
+                const textInput = inputText.value;
+
+                let selectedOption;
+                optionCheckboxes.forEach(checkbox => {
+                    if (checkbox.checked) {
+                        selectedOption = checkbox.value;
+                    }
+                });
+                const excludeInner = excludeInnerCheckbox.checked;
+
+                // parse the tree if has change, or not initialized
+                if (prevTextInput !== textInput) {
+                    tree = WebASTParser.parseTypeScript(textInput);
+                    prevTextInput = textInput;
+                }
+                
+                // tokenize
+                let tokens = null;
+                if (selectedOption === "Specialized") {
+                    tokens = WebASTParser.treeTokenizer.flattenTypeScript(tree);
+                } else {
+                    let mode;
+                    if (selectedOption === "None") {
+                        mode = WebASTParser.treeTokenizer.TokenizationMode.NONE;
+                    } else if (selectedOption === "Top Level") {
+                        mode = WebASTParser.treeTokenizer.TokenizationMode.TOP_LEVEL_ONLY;
+                    } else if (selectedOption === "Functions and Classes") {
+                        mode = WebASTParser.treeTokenizer.TokenizationMode.FUNCTIONS_AND_CLASSES;
+                    } else if (selectedOption === "Functions and Classes and Arguments") {
+                        mode = WebASTParser.treeTokenizer.TokenizationMode.FUNCTIONS_AND_CLASSES_AND_ARGUMENTS;
+                    } else if (selectedOption === "Everything") {
+                        mode = WebASTParser.treeTokenizer.TokenizationMode.EVERYTHING;
+                    } else {
+                        throw Error("Unexpected option!");
+                    }
+                    tokens = WebASTParser.treeTokenizer.flattenFaithfully(tree, mode, excludeInner);
+                }
+                tokenVisualizer.update(tokens);
+            });
+        });
+    </script>
+</body>
+</html>
