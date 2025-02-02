@@ -2,9 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Token Visualizer</title>
+    <title>Python AST Parser</title>
     <style>
-        /* Apply box-sizing globally */
         *, *::before, *::after {
             box-sizing: border-box;
         }
@@ -18,22 +17,22 @@
             display: flex;
             flex-direction: column;
             font-family: Arial, sans-serif;
-            overflow: hidden; /* Prevent body from scrolling */
+            overflow: hidden;
         }
         tree-token-visualizer {
-            flex: 0 0 70%; /* 70% height */
+            flex: 0 0 60%;
             width: 100%;
             box-sizing: border-box;
             overflow: auto;
         }
         #inputContainer {
-            flex: 0 0 25%; /* 25% height */
+            flex: 0 0 25%;
             display: flex;
             flex-direction: column;
             width: 100%;
             box-sizing: border-box;
             padding: 10px;
-            overflow: hidden; /* Prevent overflow in textarea */
+            overflow: hidden;
         }
         #inputText {
             flex: 1;
@@ -46,24 +45,31 @@
             overflow: auto;
         }
         #buttonContainer {
-            flex: 0 0 5%; /* 5% height */
+            flex: 0 0 15%;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: space-between; /* Space between checkboxes and button */
+            justify-content: space-between;
             width: 100%;
             box-sizing: border-box;
-            padding: 5px 10px; /* Adjusted padding */
-            overflow: hidden; /* Prevent overflow */
+            padding: 5px 10px;
+            overflow: hidden;
         }
+        table.checkbox-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        table.checkbox-table td {
+            border: 1px solid #ccc;
+            vertical-align: middle;
+        }
+        
         .checkbox-group {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
             justify-content: center;
-            /* Adjust the flex properties to fit within 5% height */
-            flex: 1 1 auto;
-            overflow: auto;
         }
         .checkbox-item {
             display: flex;
@@ -72,20 +78,24 @@
         .checkbox-item input {
             margin-right: 5px;
         }
+        .checkbox-description {
+            text-align: justify;
+            font-size: 0.9em;
+            line-height: 1.2;
+        }
         #submitBtn {
             width: 100%;
-            height: 35px; /* Adjusted height */
+            height: 35px;
             font-size: 16px;
             cursor: pointer;
             padding: 5px;
             box-sizing: border-box;
-            margin-top: 5px; /* Space above the button */
+            margin-top: 5px;
         }
 
-        /* Responsive adjustments if needed */
         @media (max-height: 600px) {
             #inputContainer {
-                flex: 0 0 30%; /* Adjust heights for smaller screens */
+                flex: 0 0 30%;
             }
             token-visualizer {
                 flex: 0 0 65%;
@@ -97,40 +107,75 @@
     <tree-token-visualizer></tree-token-visualizer>
 
     <div id="inputContainer">
-        <textarea id="inputText" placeholder="Enter your text here"></textarea>
+        <textarea id="inputText" placeholder="Enter a single Python source code file here"></textarea>
     </div>
 
     <div id="buttonContainer">
-        <div class="checkbox-group">
-            <div class="checkbox-item">
-                <input type="checkbox" id="optionNone" name="option" value="None" checked>
-                <label for="optionNone">None</label>
-            </div>
-            <div class="checkbox-item">
-                <input type="checkbox" id="optionTopLevel" name="option" value="Top Level">
-                <label for="optionTopLevel">Top Level</label>
-            </div>
-            <div class="checkbox-item">
-                <input type="checkbox" id="optionFunctionsClasses" name="option" value="Functions and Classes">
-                <label for="optionFunctionsClasses">Functions and Classes</label>
-            </div>
-            <div class="checkbox-item">
-                <input type="checkbox" id="optionFunctionsClassesArgs" name="option" value="Functions and Classes and Arguments">
-                <label for="optionFunctionsClassesArgs">Functions and Classes and Arguments</label>
-            </div>
-            <div class="checkbox-item">
-                <input type="checkbox" id="optionEverything" name="option" value="Everything">
-                <label for="optionEverything">Everything</label>
-            </div>
-            <div class="checkbox-item">
-                <input type="checkbox" id="optionSpecialized" name="option" value="Specialized">
-                <label for="optionSpecialized">Specialized</label>
-            </div>
-            <div class="checkbox-item">
-                <input type="checkbox" id="excludeInner" name="excludeInner">
-                <label for="excludeInner">Exclude inner</label>
-            </div>
-        </div>
+        <table class="checkbox-table">
+          <tbody>
+            <tr>
+              <td>
+                <div class="checkbox-group">
+                  <div class="checkbox-item">
+                    <input type="checkbox" id="optionNone" name="option" value="None" checked>
+                    <label for="optionNone">None</label>
+                  </div>
+                  <div class="checkbox-item">
+                    <input type="checkbox" id="optionTopLevel" name="option" value="Top Level">
+                    <label for="optionTopLevel">Top Level</label>
+                  </div>
+                  <div class="checkbox-item">
+                    <input type="checkbox" id="optionFunctionsClasses" name="option" value="Functions and Classes">
+                    <label for="optionFunctionsClasses">Functions and Classes</label>
+                  </div>
+                  <div class="checkbox-item">
+                    <input type="checkbox" id="optionFunctionsClassesArgs" name="option" value="Functions and Classes and Arguments">
+                    <label for="optionFunctionsClassesArgs">Functions and Classes and Arguments</label>
+                  </div>
+                  <div class="checkbox-item">
+                    <input type="checkbox" id="optionEverything" name="option" value="Everything">
+                    <label for="optionEverything">Everything</label>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <p class="checkbox-description">
+                  The level of depth the AST to be parsed to. None will only parse the top level of the AST and so on.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="checkbox-group">
+                  <div class="checkbox-item">
+                    <input type="checkbox" id="optionSpecialized" name="option" value="Specialized">
+                    <label for="optionSpecialized">Specialized</label>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <p class="checkbox-description">
+                  Specialized tokenization mode that minifies the source code, leaving only function signatures, class attributes and comments.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="checkbox-group">
+                  <div class="checkbox-item">
+                    <input type="checkbox" id="excludeInner" name="excludeInner">
+                    <label for="excludeInner">Exclude inner</label>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <p class="checkbox-description">
+                  Whether to exclude the inner contents of the AST node (doesn't apply to Specialized mode).
+                </p>
+              </td>
+            </tr>
+            </tbody>
+        </table>
         <button id="submitBtn">Submit</button>
     </div>
 
