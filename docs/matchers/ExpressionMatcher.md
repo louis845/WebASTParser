@@ -18,9 +18,6 @@
     - [`getLength(key: string): number`](#getlengthkey-string-number)
     - [`getMaxExpressionLength(): number`](#getmaxexpressionlength-number)
 - [Error Handling](#error-handling)
-- [Performance Considerations](#performance-considerations)
-- [Contributing](#contributing)
-- [License](#license)
 
 ## Usage
 
